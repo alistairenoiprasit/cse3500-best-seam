@@ -2,7 +2,13 @@ import imagematrix
 
 class ResizeableImage(imagematrix.ImageMatrix):
     def best_seam(self, dp=True):
-        #English description
+        # We are finding the best seam by calculating the total lowest energy to
+        # reach a certain path (i,j) and storing its value in a table
+        # Then using traceback, we select the minimum lowest energy from the lowest
+        # row in the table, and find the path working our way back up.
+
+        shortest_path = []
+
         if dp:
             # Table size m*n of i columns, j rows
             seamDistTable = [[0 for _ in range(self.height)] for _ in range(self.width)]
@@ -41,7 +47,6 @@ class ResizeableImage(imagematrix.ImageMatrix):
             # starting from the bottom we can work our way back up using the rules above
             # to find the appropriate path.
 
-            shortest_path = []
 
             # Find lowest bottom row
 
@@ -56,26 +61,9 @@ class ResizeableImage(imagematrix.ImageMatrix):
 
             shortest_path.append(coord)
 
-            '''for j in range(self.height-2, -1, -1):
-                local_i_coord = i_coord
-                min_val = seamDistTable[i_coord][j]
-    
-                if i_coord > 0 and seamDistTable[i_coord - 1][j] < min_val:
-                    min_val = seamDistTable[i_coord - 1][j]
-                    local_i_coord = i_coord - 1
-                if i_coord < self.width - 1 and seamDistTable[i_coord + 1][j] < min_val:
-                    min_val = seamDistTable[i_coord + 1][j]
-                    local_i_coord = i_coord + 1
-                i_coord = local_i_coord
-                coord = [local_i_coord, j]
-                shortest_path.append(coord) '''
-            # AI helped me understand this section
-            # I asked ClaudeAI what I was looking for in traceback
-            # as I tried the above code and it just kept failing
-            # They said that I should be looking for the target value
-            # instead of trying to find the minimum since we've already calculated
-            # the minimum, the end goal is actually to find the path used to make our minimum (its about finding the path
-            # to sum to the final minimum)
+            # AI assisted me in the traceback algorithm logic as I initially was recalculating
+            # the best path from bottom up using energy, however, it suggested that we actually
+            # need to trace the path that adds up to the minimum, not searching for the minimum itself.
 
             # What is target value?
             # The above minimum value should match the current
@@ -96,7 +84,41 @@ class ResizeableImage(imagematrix.ImageMatrix):
 
             shortest_path.reverse()
         else:
-            print("not dp")
-        return shortest_path
+            # Naive approach
+            # start at top and find every possible route down
+            # to the bottom
+            paths_from_top = [[(i, 0)] for i in range(self.width)]
+            for j in range(1, self.height, 1):
+                extended_path_from_top = []
+                for path in paths_from_top:
+                    i_coord = path[-1][0] # Get the last (3,j) i_coord from the above path
 
+                    #left (if exist)
+                    if i_coord > 0:
+                        extend_left = path + [(i_coord -1, j)]
+                        extended_path_from_top.append(extend_left)
+
+                    #middle
+                    extend_middle = path + [(i_coord, j)]
+                    extended_path_from_top.append(extend_middle)
+
+                    #right (if exist)
+                    if i_coord < self.width - 1:
+                        extend_right = path + [(i_coord + 1, j)]
+                        extended_path_from_top.append(extend_right)
+                # All paths extended, update paths from top
+                paths_from_top = extended_path_from_top
+            # Now... find energy of each path
+            # and find the minimum!
+            minimum = None
+            for curr_path in paths_from_top:
+                curr_sum = sum(self.energy(i, j) for i, j in curr_path)
+                if minimum is None:
+                    minimum = curr_sum
+                    shortest_path = curr_path
+                if curr_sum < minimum:
+                    minimum = curr_sum
+                    shortest_path = curr_path
+
+        return shortest_path
 
