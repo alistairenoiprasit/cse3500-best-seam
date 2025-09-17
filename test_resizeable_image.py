@@ -11,7 +11,7 @@ class TestImage(unittest.TestCase):
 
     def image_test(self, filename, expected_cost):
         image = ResizeableImage(filename)
-        seam = image.best_seam()
+        seam = image.best_seam(True)
 
         # Make sure the seam is of the appropriate length.
         self.assertEqual(image.height, len(seam), 'Seam wrong size.')
